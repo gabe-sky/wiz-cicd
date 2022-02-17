@@ -8,6 +8,7 @@ jobs:
     env:
       SCAN_PATH: "terraform" # Set the relative path in the repo to scan
       POLICY: "Gabe Schuyler IaC" # Set the desired Wiz-cli policy to use
+      SCAN_NAME: "Gabe wiz-cicd terraform scan" # What goes in the GUI?
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
@@ -30,6 +31,6 @@ jobs:
         WIZ_CLIENT_SECRET: ${{ secrets.WIZ_CLIENT_SECRET }}
 
     - name: Run wiz-cli IaC scan
-      run: ./wizcli iac scan --path $SCAN_PATH --policy "$POLICY"
+      run: ./wizcli iac scan --path $SCAN_PATH --policy "$POLICY" --name "$SCAN_NAME"
       env:
         WIZ_ENV: 'test'
