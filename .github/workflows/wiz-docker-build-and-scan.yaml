@@ -31,8 +31,11 @@ jobs:
     - name: Authenticate to Wiz
       run: ./wizcli auth --id "$WIZ_CLIENT_ID" --secret "$WIZ_CLIENT_SECRET"
       env:
+        WIZ_ENV: 'test'
         WIZ_CLIENT_ID: ${{ secrets.WIZ_CLIENT_ID }}
         WIZ_CLIENT_SECRET: ${{ secrets.WIZ_CLIENT_SECRET }}
 
     - name: Run wiz-cli docker image scan
       run: ./wizcli docker scan --image $TAG --policy "$POLICY"
+      env:
+        WIZ_ENV: 'test'
