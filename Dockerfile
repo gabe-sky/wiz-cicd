@@ -1,3 +1,1 @@
-FROM alpine:latest
-
-RUN apk add nginx
+FROM ubuntu:groovy-20200704
