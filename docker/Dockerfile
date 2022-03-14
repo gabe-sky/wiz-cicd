@@ -1,1 +1,1 @@
-FROM ubuntu:groovy-20200704
+FROM ubuntu:latest
