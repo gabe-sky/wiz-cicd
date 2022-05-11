@@ -1,1 +1,1 @@
-FROM ubuntu:8
+FROM ubuntu:latest
