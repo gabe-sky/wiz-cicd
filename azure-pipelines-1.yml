@@ -1,19 +1,57 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
 trigger:
-- main
+- master
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'Ubuntu-16.04'
+
+#populate this variable with the desired image to be scanned, e.g. nginx:latest. Alternatively, add an environment variable
+variables:
+  imageName: 'nginx:latest'
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+- task: CmdLine@2
+  inputs:
+    script: |
+      echo "##[command]Obtaining WizCLI from the inter-webs..."
+      sudo curl -o /usr/bin/wizcli https://wizcli.app.wiz.io/wizcli
+      echo "##[command]Making WizCLI executable"
+      sudo chmod +x /usr/bin/wizcli
+      echo "##[command]Pulling image if not available yet"
+      docker pull $(imageName)
+- task: UniversalPackages@0
+  displayName: 'Obtain cached Wiz auth'
+  continueOnError: true
+  inputs:
+    command: download
+    vstsFeed: '<Project ID>/WizAuth'
+    vstsFeedPackage: 'auth.json'
+    vstsPackageVersion: '0.0.2'
+    downloadDirectory: '$(Build.SourcesDirectory)'
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+- task: CmdLine@2
+  inputs:
+    script: |
+      echo "##[command]Checking if auth cache exists and move it to its rightful place..."
+      mkdir ${HOME}/.wiz
+      sudo mv $(Build.SourcesDirectory)/auth.json ${HOME}/.wiz
+      echo "##[command]Trying scan with cached auth"
+      /usr/bin/./wizcli docker scan --image $(imageName) 
+      exitCode=$?
+      if [ $exitCode -eq 3 ]; then
+        echo "##[warning]Not authenticated via cache! Authenticating and scanning again."
+        # Time to authenticate!
+        /usr/bin/./wizcli auth --id $(WIZ_ID) --secret $(WIZ_SECRET)
+        sudo cp ${HOME}/.wiz/auth.json $(Build.ArtifactStagingDirectory)
+        /usr/bin/./wizcli docker scan --image $(imageName) 
+        exitCode=$?
+      fi
+      echo "##[command]Saving auth cache in next task..."
+- task: UniversalPackages@0
+  displayName: 'Cache Wiz auth'
+  inputs:
+    command: publish
+    publishDirectory: '$(Build.ArtifactStagingDirectory)'
+    vstsFeedPublish: '<Project ID>/WizAuth'
+    vstsFeedPackagePublish: 'auth.json'
+    versionOption: custom
+    versionPublish: '0.0.2'
